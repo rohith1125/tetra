@@ -1,0 +1,71 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tweets        Tweet[]
+  likes         Like[]
+  datingProfile DatingProfile?
+  sentMatches   Match[]   @relation("Sender")
+  receivedMatches Match[] @relation("Receiver")
+}
+
+model Tweet {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  likes     Like[]
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tweetId   String
+  tweet     Tweet    @relation(fields: [tweetId], references: [id])
+
+  @@unique([userId, tweetId])
+}
+
+model DatingProfile {
+  id          String   @id @default(cuid())
+  bio         String?
+  interests   String[]
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Match {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  senderId   String
+  sender     User     @relation("Sender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+  status     MatchStatus @default(PENDING)
+
+  @@unique([senderId, receiverId])
+}
+
+enum MatchStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
